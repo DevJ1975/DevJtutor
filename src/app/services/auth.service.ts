@@ -4,12 +4,14 @@ import {
   User,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   updateProfile,
 } from 'firebase/auth';
 import { FirebaseService } from './firebase.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -25,9 +27,21 @@ export class AuthService {
   private resolveReady!: () => void;
   /** Resolves once the first auth-state callback has fired. */
   readonly readyPromise = new Promise<void>((r) => (this.resolveReady = r));
+  private triedAnon = false;
 
   constructor() {
-    onAuthStateChanged(this.fb.auth, (u) => {
+    onAuthStateChanged(this.fb.auth, async (u) => {
+      // Guest mode: auto sign-in anonymously so the login screen is skipped
+      // while still giving us a real uid for Firestore persistence.
+      if (!u && environment.autoGuestLogin && !this.triedAnon) {
+        this.triedAnon = true;
+        try {
+          await signInAnonymously(this.fb.auth);
+          return; // onAuthStateChanged re-fires with the anonymous user
+        } catch {
+          // Anonymous provider not enabled — fall back to the login screen.
+        }
+      }
       this.user.set(u);
       this.ready.set(true);
       this.resolveReady();

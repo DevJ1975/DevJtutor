@@ -11,5 +11,6 @@ export const environment = {
   },
   tutorApiUrl: '/api/tutor',
   ownerName: 'Jamil',
+  autoGuestLogin: true,
   messagingVapidKey: '',
 };

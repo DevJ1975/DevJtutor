@@ -4,6 +4,7 @@ import { Theme, UserProfile } from '../models/user.model';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
 import { levelProgress, todayIso } from './util';
+import { environment } from '../../environments/environment';
 
 const DEFAULT_GOAL = 100;
 
@@ -62,7 +63,7 @@ export class UserService {
     if (!snap.exists()) {
       const fresh: UserProfile = {
         uid,
-        displayName: displayName ?? (email ? email.split('@')[0] : 'Learner'),
+        displayName: displayName ?? (email ? email.split('@')[0] : environment.ownerName || 'Learner'),
         email: email ?? '',
         photoURL: photoURL ?? undefined,
         xp: 0,

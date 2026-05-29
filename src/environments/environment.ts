@@ -18,6 +18,10 @@ export const environment = {
   tutorApiUrl: '/api/tutor',
   // The learner this app is personalized for.
   ownerName: 'Jamil',
+  // When true, skip the login/welcome screen by auto signing in anonymously.
+  // Requires enabling Anonymous sign-in in the Firebase console. Set to false
+  // to bring the login screen back.
+  autoGuestLogin: true,
   // Web Push (FCM) VAPID public key. Get it from Firebase console →
   // Project settings → Cloud Messaging → Web Push certificates. Leave empty to
   // disable push (the app degrades gracefully with a friendly message).

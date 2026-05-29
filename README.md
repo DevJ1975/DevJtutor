@@ -57,7 +57,13 @@ npm run build      # production build → dist/devj-tutor/browser
 The public Firebase web config is already wired in `src/environments/`, and the
 project is pre-linked via `.firebaserc` (`devj-tutor`) — no `firebase init` needed.
 
-1. In the [Firebase console](https://console.firebase.google.com/project/devj-tutor/authentication/providers) → **Authentication → Sign-in method**, enable **Email/Password** and **Google**.
+1. In the [Firebase console](https://console.firebase.google.com/project/devj-tutor/authentication/providers) → **Authentication → Sign-in method**, enable **Email/Password** and **Google** (and **Anonymous** if you use guest mode — see below).
+
+> **Skip the login screen (guest mode):** `autoGuestLogin: true` in
+> `src/environments/` makes the app auto sign-in **anonymously**, so the
+> welcome/login screen never appears and progress still saves (per device).
+> Enable **Anonymous** sign-in in the console for this to work. Set
+> `autoGuestLogin: false` to bring the login screen back.
 2. **Authentication → Settings → Authorized domains** → add your Vercel domain (e.g. `devj-tutor.vercel.app`).
 3. **Firestore Database** → create a database (production mode).
 4. Deploy the included security rules + indexes (one time, and whenever they change):
