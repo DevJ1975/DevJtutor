@@ -25,9 +25,10 @@ initializeApp();
 // ─────────────────────────── AI tutor proxy ───────────────────────────
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
+const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 
 export const tutor = onRequest(
-  { secrets: [ANTHROPIC_API_KEY, OPENAI_API_KEY], timeoutSeconds: 60, cors: true, region: 'us-central1' },
+  { secrets: [ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY], timeoutSeconds: 60, cors: true, region: 'us-central1' },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed' });
@@ -42,18 +43,23 @@ export const tutor = onRequest(
 
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
-    if (!anthropicKey && !openaiKey) {
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const provider = anthropicKey ? 'anthropic' : openaiKey ? 'openai' : geminiKey ? 'gemini' : null;
+    if (!provider) {
       res.status(503).json({
         error:
-          'The AI tutor isn’t configured yet. Run `firebase functions:secrets:set ANTHROPIC_API_KEY` (or OPENAI_API_KEY) and redeploy. 🔑',
+          'The AI tutor isn’t configured yet. Run `firebase functions:secrets:set ANTHROPIC_API_KEY` (or OPENAI_API_KEY / GEMINI_API_KEY) and redeploy. 🔑',
       });
       return;
     }
 
     try {
-      const upstream = anthropicKey
-        ? await callAnthropic(anthropicKey, messages, system)
-        : await callOpenAI(openaiKey, messages, system);
+      const upstream =
+        provider === 'anthropic'
+          ? await callAnthropic(anthropicKey, messages, system)
+          : provider === 'openai'
+            ? await callOpenAI(openaiKey, messages, system)
+            : await callGemini(geminiKey, messages, system);
 
       if (!upstream.ok || !upstream.body) {
         const detail = await upstream.text().catch(() => '');
@@ -64,9 +70,9 @@ export const tutor = onRequest(
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache');
 
+      const parseLine = provider === 'anthropic' ? parseAnthropicLine : provider === 'openai' ? parseOpenAILine : parseGeminiLine;
       const reader = upstream.body.getReader();
       const decoder = new TextDecoder();
-      const useAnthropic = !!anthropicKey;
       let buffer = '';
 
       for (;;) {
@@ -76,7 +82,7 @@ export const tutor = onRequest(
         const lines = buffer.split('\n');
         buffer = lines.pop() ?? '';
         for (const line of lines) {
-          const text = useAnthropic ? parseAnthropicLine(line) : parseOpenAILine(line);
+          const text = parseLine(line);
           if (text) res.write(text);
         }
       }
@@ -110,6 +116,33 @@ function callOpenAI(key, messages, system) {
       messages: [{ role: 'system', content: system ?? 'You are a helpful coding tutor.' }, ...messages],
     }),
   });
+}
+
+function callGemini(key, messages, system) {
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`;
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system ?? 'You are a helpful coding tutor.' }] },
+      contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+      generationConfig: { maxOutputTokens: 1024 },
+    }),
+  });
+}
+
+function parseGeminiLine(line) {
+  const t = line.trim();
+  if (!t.startsWith('data:')) return '';
+  const payload = t.slice(5).trim();
+  if (!payload || payload === '[DONE]') return '';
+  try {
+    const parts = JSON.parse(payload).candidates?.[0]?.content?.parts;
+    return Array.isArray(parts) ? parts.map((p) => p.text ?? '').join('') : '';
+  } catch {
+    return '';
+  }
 }
 
 function parseAnthropicLine(line) {

@@ -78,10 +78,12 @@ The LLM key is **never** shipped to the browser. Set **one** of these in
 
 | Variable | Purpose |
 |----------|---------|
-| `ANTHROPIC_API_KEY` | Use Claude (preferred). Optional: `ANTHROPIC_MODEL` |
-| `OPENAI_API_KEY` | Use GPT instead. Optional: `OPENAI_MODEL` |
+| `ANTHROPIC_API_KEY` | Use Claude. Optional: `ANTHROPIC_MODEL` |
+| `OPENAI_API_KEY` | Use GPT. Optional: `OPENAI_MODEL` |
+| `GEMINI_API_KEY` | Use Google Gemini. Optional: `GEMINI_MODEL` (default `gemini-2.0-flash`) |
 
-See `.env.example`. Until a key is set, the app runs fine and the chat shows a friendly “add your key” message.
+Set **one** (checked in the order above). See `.env.example`. Until a key is set,
+the app runs fine and the chat shows a friendly “add your key” message.
 
 ---
 
@@ -125,7 +127,7 @@ Vercel — no client changes.
 ```bash
 npm run firebase:login                 # one time
 # AI tutor key (server-side) — requires the Blaze plan for functions:
-npx firebase-tools functions:secrets:set ANTHROPIC_API_KEY   # or OPENAI_API_KEY
+npx firebase-tools functions:secrets:set GEMINI_API_KEY      # or ANTHROPIC_API_KEY / OPENAI_API_KEY
 npm run firebase:deploy                # builds, then deploys hosting + functions + rules
 ```
 
