@@ -4,6 +4,10 @@ A fun, AI-powered tutor that takes you from **beginner to mastery** in **JavaScr
 
 Inspired by the best of **Team Treehouse** (structured, stacking tracks + badges) and **Codecademy** (hands-on, run-it-live learning).
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FDevJ1975%2FDevJtutor&env=ANTHROPIC_API_KEY&envDescription=API%20key%20for%20the%20DevJ%20AI%20tutor%20(Anthropic%20Claude)%20%E2%80%94%20kept%20server-side&envLink=https%3A%2F%2Fconsole.anthropic.com%2Fsettings%2Fkeys&project-name=devj-tutor&repository-name=devjtutor)
+
+> One click imports the repo into Vercel and prompts for your `ANTHROPIC_API_KEY`. After it deploys, finish the [Firebase setup](#-firebase-setup-one-time-by-the-owner) so sign-in works.
+
 ---
 
 ## ✨ Features
@@ -84,7 +88,11 @@ This repo is Vercel-ready (`vercel.json`):
 - **Serverless function:** `api/tutor.ts` (the AI proxy)
 - **SPA routing:** rewrites all non-`/api` paths to `index.html`
 
-Connect the GitHub repo in Vercel (or `vercel --prod`), add the AI env var, and you’re live.
+**One-click:**
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FDevJ1975%2FDevJtutor&env=ANTHROPIC_API_KEY&envDescription=API%20key%20for%20the%20DevJ%20AI%20tutor%20(Anthropic%20Claude)%20%E2%80%94%20kept%20server-side&envLink=https%3A%2F%2Fconsole.anthropic.com%2Fsettings%2Fkeys&project-name=devj-tutor&repository-name=devjtutor)
+
+Or connect the GitHub repo in Vercel manually (or run `vercel --prod`), add the AI env var, and you’re live.
 
 ---
 
