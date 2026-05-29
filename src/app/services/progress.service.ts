@@ -5,6 +5,7 @@ import { ALL_LESSONS, COURSE_BY_ID, LESSON_BY_ID } from '../data/curriculum';
 import { LanguageId, Tier } from '../models/curriculum.model';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
+import { lsGet, lsSet } from './local-store';
 
 @Injectable({ providedIn: 'root' })
 export class ProgressService {
@@ -28,6 +29,10 @@ export class ProgressService {
       this.unsub = null;
       if (!user) {
         this.progress.set({});
+        return;
+      }
+      if (this.auth.localGuest()) {
+        this.progress.set(lsGet<Record<string, LessonProgress>>('progress', {}));
         return;
       }
       const col = collection(this.fb.db, 'users', user.uid, 'progress');
@@ -71,6 +76,12 @@ export class ProgressService {
       exercisePassed: exercisePassed || (existing?.exercisePassed ?? false),
       completedAt: existing?.completedAt ?? Date.now(),
     };
+    if (this.auth.localGuest()) {
+      const map = { ...this.progress(), [lessonId]: record };
+      this.progress.set(map);
+      lsSet('progress', map);
+      return { firstTime };
+    }
     await setDoc(doc(this.fb.db, 'users', user.uid, 'progress', lessonId), record);
     return { firstTime };
   }

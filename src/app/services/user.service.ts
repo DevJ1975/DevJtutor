@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
 import { levelProgress, todayIso } from './util';
 import { environment } from '../../environments/environment';
+import { lsGet, lsSet } from './local-store';
 
 const DEFAULT_GOAL = 100;
 
@@ -39,6 +40,10 @@ export class UserService {
       if (!user) {
         this.profile.set(null);
         this.loading.set(false);
+        return;
+      }
+      if (this.auth.localGuest()) {
+        this.hydrateLocalProfile();
         return;
       }
       this.loading.set(true);
@@ -92,9 +97,36 @@ export class UserService {
     return p ? p.dailyXp[todayIso()] ?? 0 : 0;
   }
 
+  /** Load (or seed) the local-guest profile from localStorage. */
+  private hydrateLocalProfile(): void {
+    const seeded: UserProfile = {
+      uid: 'local-guest',
+      displayName: environment.ownerName || 'Guest',
+      email: '',
+      xp: 0,
+      level: 1,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastActiveDate: '',
+      dailyXp: {},
+      cardsReviewed: 0,
+      fcmTokens: [],
+      settings: { theme: this.currentDomTheme(), dailyGoalXp: DEFAULT_GOAL, soundOn: true, notifications: false, tutorModel: '' },
+      createdAt: Date.now(),
+    };
+    this.profile.set(lsGet<UserProfile>('profile', seeded));
+    this.loading.set(false);
+  }
+
   async patch(partial: Partial<UserProfile>): Promise<void> {
     const p = this.profile();
     if (!p) return;
+    if (this.auth.localGuest()) {
+      const merged = { ...p, ...partial } as UserProfile;
+      this.profile.set(merged);
+      lsSet('profile', merged);
+      return;
+    }
     await updateDoc(doc(this.fb.db, 'users', p.uid), partial as Record<string, unknown>);
   }
 
@@ -126,12 +158,22 @@ export class UserService {
   /** Register a device push token (idempotent via arrayUnion). */
   async addFcmToken(token: string): Promise<void> {
     const p = this.profile();
-    if (p) await updateDoc(doc(this.fb.db, 'users', p.uid), { fcmTokens: arrayUnion(token) });
+    if (!p) return;
+    if (this.auth.localGuest()) {
+      await this.patch({ fcmTokens: Array.from(new Set([...(p.fcmTokens ?? []), token])) });
+      return;
+    }
+    await updateDoc(doc(this.fb.db, 'users', p.uid), { fcmTokens: arrayUnion(token) });
   }
 
   async removeFcmToken(token: string): Promise<void> {
     const p = this.profile();
-    if (p) await updateDoc(doc(this.fb.db, 'users', p.uid), { fcmTokens: arrayRemove(token) });
+    if (!p) return;
+    if (this.auth.localGuest()) {
+      await this.patch({ fcmTokens: (p.fcmTokens ?? []).filter((t) => t !== token) });
+      return;
+    }
+    await updateDoc(doc(this.fb.db, 'users', p.uid), { fcmTokens: arrayRemove(token) });
   }
 
   private currentDomTheme(): Theme {

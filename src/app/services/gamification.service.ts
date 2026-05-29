@@ -8,6 +8,7 @@ import { FirebaseService } from './firebase.service';
 import { ProgressService } from './progress.service';
 import { UserService } from './user.service';
 import { addDaysIso, levelForXp, todayIso } from './util';
+import { lsGet, lsSet } from './local-store';
 
 export interface CompletionResult {
   xpGained: number;
@@ -38,6 +39,10 @@ export class GamificationService {
       this.unsub = null;
       if (!user) {
         this.earnedBadgeIds.set(new Set());
+        return;
+      }
+      if (this.auth.localGuest()) {
+        this.earnedBadgeIds.set(new Set(lsGet<string[]>('badges', [])));
         return;
       }
       const col = collection(this.fb.db, 'users', user.uid, 'badges');
@@ -125,17 +130,22 @@ export class GamificationService {
     if (!user || !p) return [];
     const earned = this.earnedBadgeIds();
     const fresh: Badge[] = [];
+    const local = this.auth.localGuest();
 
     for (const badge of BADGES) {
       if (earned.has(badge.id)) continue;
       if (this.satisfies(badge.rule, p, ctx)) {
-        await setDoc(doc(this.fb.db, 'users', user.uid, 'badges', badge.id), {
-          badgeId: badge.id,
-          earnedAt: Date.now(),
-        });
+        if (!local) {
+          await setDoc(doc(this.fb.db, 'users', user.uid, 'badges', badge.id), { badgeId: badge.id, earnedAt: Date.now() });
+        }
         fresh.push(badge);
         this.fb.track('earn_badge', { badge: badge.id });
       }
+    }
+    if (local && fresh.length) {
+      const ids = new Set([...earned, ...fresh.map((b) => b.id)]);
+      this.earnedBadgeIds.set(ids);
+      lsSet('badges', [...ids]);
     }
     return fresh;
   }

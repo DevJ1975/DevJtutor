@@ -5,6 +5,7 @@ import { ALL_LESSONS } from '../data/curriculum';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
 import { addDaysIso, clamp, daysBetween, todayIso } from './util';
+import { lsGet, lsSet } from './local-store';
 
 export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy';
 const GRADE_Q: Record<ReviewGrade, number> = { again: 2, hard: 3, good: 4, easy: 5 };
@@ -49,6 +50,10 @@ export class FlashcardService {
       this.unsub = null;
       if (!user) {
         this.reviews.set({});
+        return;
+      }
+      if (this.auth.localGuest()) {
+        this.reviews.set(lsGet<Record<string, CardReview>>('flashcards', {}));
         return;
       }
       const col = collection(this.fb.db, 'users', user.uid, 'flashcards');
@@ -114,6 +119,12 @@ export class FlashcardService {
       dueDate: addDaysIso(today, interval),
       lastReviewed: today,
     };
+    if (this.auth.localGuest()) {
+      const map = { ...this.reviews(), [card.key]: next };
+      this.reviews.set(map);
+      lsSet('flashcards', map);
+      return;
+    }
     await setDoc(doc(this.fb.db, 'users', user.uid, 'flashcards', card.key), next);
   }
 

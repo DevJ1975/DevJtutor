@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseService } from './firebase.service';
 import { environment } from '../../environments/environment';
+import { LOCAL_GUEST_UID } from './local-store';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -21,6 +22,8 @@ export class AuthService {
   readonly user = signal<User | null>(null);
   /** Becomes true once the initial auth state has resolved. */
   readonly ready = signal(false);
+  /** True when running as the offline local guest (no Firebase auth). */
+  readonly localGuest = signal(false);
 
   readonly isAuthenticated = computed(() => !!this.user());
 
@@ -31,6 +34,7 @@ export class AuthService {
 
   constructor() {
     onAuthStateChanged(this.fb.auth, async (u) => {
+      if (this.localGuest()) return; // once local guest, ignore further events
       // Guest mode: auto sign-in anonymously so the login screen is skipped
       // while still giving us a real uid for Firestore persistence.
       if (!u && environment.autoGuestLogin && !this.triedAnon) {
@@ -39,13 +43,25 @@ export class AuthService {
           await signInAnonymously(this.fb.auth);
           return; // onAuthStateChanged re-fires with the anonymous user
         } catch {
-          // Anonymous provider not enabled — fall back to the login screen.
+          // Anonymous provider unavailable (not enabled / offline) — enter the
+          // app as a fully local guest so the login screen is never shown.
+          this.enterLocalGuest();
+          return;
         }
       }
       this.user.set(u);
       this.ready.set(true);
       this.resolveReady();
     });
+
+    // Safety net: if auth doesn't resolve quickly (e.g. the anonymous call
+    // hangs offline), drop into local-guest so the app never stalls on a blank
+    // or login screen.
+    if (environment.autoGuestLogin) {
+      setTimeout(() => {
+        if (!this.ready()) this.enterLocalGuest();
+      }, 3000);
+    }
   }
 
   async signUpWithEmail(name: string, email: string, password: string): Promise<void> {
@@ -67,7 +83,22 @@ export class AuthService {
     this.fb.track('login', { method: 'google' });
   }
 
+  /** Enter the app as an offline local guest (synthetic user, localStorage data). */
+  private enterLocalGuest(): void {
+    if (this.localGuest()) return;
+    this.localGuest.set(true);
+    this.user.set({
+      uid: LOCAL_GUEST_UID,
+      displayName: environment.ownerName || 'Guest',
+      email: null,
+      isAnonymous: true,
+    } as unknown as User);
+    this.ready.set(true);
+    this.resolveReady();
+  }
+
   async logout(): Promise<void> {
+    if (this.localGuest()) return; // nothing to sign out of in local guest mode
     await signOut(this.fb.auth);
   }
 
