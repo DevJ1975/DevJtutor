@@ -5,6 +5,7 @@ import { UserService } from '../../services/user.service';
 import { ProgressService } from '../../services/progress.service';
 import { GamificationService } from '../../services/gamification.service';
 import { FlashcardService } from '../../services/flashcard.service';
+import { NotificationService } from '../../services/notification.service';
 import { addDaysIso, todayIso } from '../../services/util';
 
 @Component({
@@ -74,6 +75,21 @@ import { addDaysIso, todayIso } from '../../services/util';
 
         <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-white/10">
           <div>
+            <p class="font-semibold">Daily reminders 🔔</p>
+            <p class="text-sm text-slate-500">A gentle nudge to keep your streak alive.</p>
+            @if (notify.note()) { <p class="mt-1 text-xs font-medium text-brand-600">{{ notify.note() }}</p> }
+          </div>
+          @if (notify.status() === 'unsupported') {
+            <span class="text-sm text-slate-400">Not supported</span>
+          } @else if (p.settings.notifications && notify.status() === 'granted') {
+            <button class="btn-ghost" (click)="notify.disable()">Turn off</button>
+          } @else {
+            <button class="btn-primary" (click)="notify.enable()">Enable</button>
+          }
+        </div>
+
+        <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-white/10">
+          <div>
             <p class="font-semibold">Sign out</p>
             <p class="text-sm text-slate-500">See you tomorrow — keep the streak alive!</p>
           </div>
@@ -90,6 +106,7 @@ export class Profile {
   protected progress = inject(ProgressService);
   protected gamification = inject(GamificationService);
   protected cards = inject(FlashcardService);
+  protected notify = inject(NotificationService);
 
   protected profile = this.users.profile;
   protected goals = [50, 100, 150, 200];

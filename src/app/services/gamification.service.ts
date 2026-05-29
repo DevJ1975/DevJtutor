@@ -80,6 +80,8 @@ export class GamificationService {
     };
     await this.users.patch(patch);
     this.fb.track('earn_xp', { amount, level: newLevel });
+    if (newLevel > beforeLevel) this.fb.track('level_up', { level: newLevel });
+    if (streakIncreased) this.fb.track('streak_extend', { streak });
 
     return {
       xpGained: amount,
@@ -102,6 +104,7 @@ export class GamificationService {
     const award = firstTime ? xp : Math.round(xp * 0.1);
     const base = await this.grantXp(award);
     const newBadges = await this.evaluateBadges({ perfectQuiz: score >= 100 });
+    this.fb.track('lesson_complete', { lessonId, score, firstTime });
     return { ...base, newBadges };
   }
 
@@ -111,6 +114,7 @@ export class GamificationService {
     if (p) await this.users.patch({ cardsReviewed: (p.cardsReviewed ?? 0) + count });
     const base = await this.grantXp(count * xpEach);
     const newBadges = await this.evaluateBadges({});
+    this.fb.track('flashcards_reviewed', { count });
     return { ...base, newBadges };
   }
 

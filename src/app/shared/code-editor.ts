@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, model, output, signa
 import { FormsModule } from '@angular/forms';
 import { Exercise, RunnerKind } from '../models/curriculum.model';
 import { GradeOutcome, PlaygroundService, TestResult } from '../services/playground.service';
+import { FirebaseService } from '../services/firebase.service';
 
 @Component({
   selector: 'app-code-editor',
@@ -59,6 +60,7 @@ import { GradeOutcome, PlaygroundService, TestResult } from '../services/playgro
 })
 export class CodeEditor {
   protected playground = inject(PlaygroundService);
+  private fb = inject(FirebaseService);
 
   readonly runner = input.required<RunnerKind>();
   readonly exercise = input<Exercise | null>(null);
@@ -97,6 +99,7 @@ export class CodeEditor {
   async run(): Promise<void> {
     this.busy.set(true);
     this.tests.set([]);
+    this.fb.track('code_run', { runner: this.runner() });
     try {
       const res = await this.playground.run(this.runner(), this.code(), this.exercise()?.setupSql);
       this.output.set(res.output);
@@ -111,6 +114,7 @@ export class CodeEditor {
     const ex = this.exercise();
     if (!ex) return;
     this.busy.set(true);
+    this.fb.track('exercise_check', { runner: this.runner() });
     try {
       const res: GradeOutcome = await this.playground.grade(ex, this.code());
       this.output.set(res.output);

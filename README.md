@@ -85,6 +85,37 @@ See `.env.example`. Until a key is set, the app runs fine and the chat shows a f
 
 ---
 
+## 🔔 Push reminders (Firebase Cloud Messaging)
+
+Daily streak reminders are fully wired:
+
+- **Client:** `notification.service.ts` requests permission, registers
+  `public/firebase-messaging-sw.js`, stores the FCM token on the user, and shows
+  foreground messages as in-app toasts. Toggle it under **Profile → Daily reminders**.
+- **Server:** `functions/index.js` has a scheduled `dailyReminder` that pushes to
+  learners who opted in and haven’t trained today.
+
+To activate:
+
+1. Firebase console → **Project settings → Cloud Messaging → Web Push certificates** →
+   generate a key pair, and paste the public key into `messagingVapidKey` in
+   `src/environments/environment*.ts`.
+2. Deploy the scheduler (requires the Blaze plan):
+   ```bash
+   cd functions && npm install && npm run deploy
+   ```
+   Edit the `schedule`/`timeZone` in `functions/index.js` to your preference.
+
+Until the VAPID key is set, the toggle still works (permission + service worker)
+and degrades gracefully.
+
+## 📊 Analytics
+
+Firebase Analytics events fire on key actions (guarded so they never crash):
+`page_view`, `sign_up`, `login`, `earn_xp`, `level_up`, `streak_extend`,
+`lesson_complete`, `flashcards_reviewed`, `code_run`, `exercise_check`,
+`earn_badge`, `tutor_message`, `notifications_enabled`.
+
 ## ☁️ Deploy to Vercel
 
 This repo is Vercel-ready (`vercel.json`):

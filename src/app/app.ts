@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { AuthService } from './services/auth.service';
+import { FirebaseService } from './services/firebase.service';
 import { UserService } from './services/user.service';
 import { GamificationService } from './services/gamification.service';
 import { FlashcardService } from './services/flashcard.service';
@@ -117,4 +119,14 @@ export class App {
   ];
 
   protected initial = computed(() => (this.users.firstName()[0] ?? '?').toUpperCase());
+
+  private router = inject(Router);
+  private fb = inject(FirebaseService);
+
+  constructor() {
+    // Log a page_view analytics event on each navigation.
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
+      this.fb.track('page_view', { page_path: (e as NavigationEnd).urlAfterRedirects });
+    });
+  }
 }

@@ -4,6 +4,8 @@ export interface UserSettings {
   theme: Theme;
   dailyGoalXp: number;
   soundOn: boolean;
+  /** Whether the learner opted into daily streak push reminders. */
+  notifications: boolean;
 }
 
 export interface UserProfile {
@@ -21,6 +23,8 @@ export interface UserProfile {
   dailyXp: Record<string, number>;
   /** Lifetime count of flashcards reviewed (drives the Memory Athlete badge). */
   cardsReviewed: number;
+  /** Registered FCM device tokens for push reminders. */
+  fcmTokens?: string[];
   settings: UserSettings;
   createdAt: number;
 }

@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { Theme, UserProfile } from '../models/user.model';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
@@ -72,7 +72,8 @@ export class UserService {
         lastActiveDate: '',
         dailyXp: {},
         cardsReviewed: 0,
-        settings: { theme: this.currentDomTheme(), dailyGoalXp: DEFAULT_GOAL, soundOn: true },
+        fcmTokens: [],
+        settings: { theme: this.currentDomTheme(), dailyGoalXp: DEFAULT_GOAL, soundOn: true, notifications: false },
         createdAt: Date.now(),
       };
       await setDoc(ref, fresh);
@@ -109,6 +110,22 @@ export class UserService {
   async setDailyGoal(goal: number): Promise<void> {
     const p = this.profile();
     if (p) await this.patch({ settings: { ...p.settings, dailyGoalXp: goal } });
+  }
+
+  async setNotifications(on: boolean): Promise<void> {
+    const p = this.profile();
+    if (p) await this.patch({ settings: { ...p.settings, notifications: on } });
+  }
+
+  /** Register a device push token (idempotent via arrayUnion). */
+  async addFcmToken(token: string): Promise<void> {
+    const p = this.profile();
+    if (p) await updateDoc(doc(this.fb.db, 'users', p.uid), { fcmTokens: arrayUnion(token) });
+  }
+
+  async removeFcmToken(token: string): Promise<void> {
+    const p = this.profile();
+    if (p) await updateDoc(doc(this.fb.db, 'users', p.uid), { fcmTokens: arrayRemove(token) });
   }
 
   private currentDomTheme(): Theme {

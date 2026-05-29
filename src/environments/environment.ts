@@ -18,4 +18,8 @@ export const environment = {
   tutorApiUrl: '/api/tutor',
   // The learner this app is personalized for.
   ownerName: 'Jamil',
+  // Web Push (FCM) VAPID public key. Get it from Firebase console →
+  // Project settings → Cloud Messaging → Web Push certificates. Leave empty to
+  // disable push (the app degrades gracefully with a friendly message).
+  messagingVapidKey: '',
 };
