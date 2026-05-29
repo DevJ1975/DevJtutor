@@ -6,7 +6,10 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "firebase:login": "npx -y firebase-tools login",
+    "firebase:rules": "npx -y firebase-tools deploy --only firestore:rules",
+    "firebase:deploy": "npx -y firebase-tools deploy --only firestore"
   },
   "private": true,
   "packageManager": "npm@10.9.7",
