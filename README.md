@@ -108,6 +108,29 @@ Both serve `/api/tutor` so the in-app chat works end-to-end before you deploy.
 
 ---
 
+## 👤 Seed a login (optional)
+
+Create a ready-to-use account (and a starter profile with a couple of completed
+lessons + badges) with the included seed script:
+
+1. Firebase console → **Project settings → Service accounts → Generate new
+   private key** → save as `functions/serviceAccount.json` (gitignored — never commit).
+2. Enable **Email/Password** sign-in (Authentication → Sign-in method).
+3. Run:
+   ```bash
+   cd functions && npm install
+   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json npm run seed
+   ```
+
+Default credentials (override with `SEED_EMAIL` / `SEED_PASSWORD` / `SEED_NAME`):
+
+| Email | Password |
+|-------|----------|
+| `jamil@trainovations.com` | `DevJTutor!2026` |
+
+> Change the password after first login. The script is idempotent — re-running
+> it just resets the password and re-seeds the profile.
+
 ## 🔔 Push reminders (Firebase Cloud Messaging)
 
 Daily streak reminders are fully wired:
