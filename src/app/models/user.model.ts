@@ -6,6 +6,8 @@ export interface UserSettings {
   soundOn: boolean;
   /** Whether the learner opted into daily streak push reminders. */
   notifications: boolean;
+  /** Preferred AI model id (empty = let the server pick its default). */
+  tutorModel?: string;
 }
 
 export interface UserProfile {

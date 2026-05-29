@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { FirebaseService } from './firebase.service';
+import { UserService } from './user.service';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -18,6 +19,7 @@ export interface TutorContext {
 @Injectable({ providedIn: 'root' })
 export class TutorService {
   private fb = inject(FirebaseService);
+  private users = inject(UserService);
 
   buildSystemPrompt(ctx: TutorContext): string {
     const lessonBlock = ctx.lessonTitle
@@ -43,10 +45,11 @@ export class TutorService {
     onDelta?: (chunk: string) => void,
   ): Promise<string> {
     this.fb.track('tutor_message', { lesson: ctx.lessonTitle ?? 'general' });
+    const model = this.users.profile()?.settings.tutorModel || undefined;
     const res = await fetch(environment.tutorApiUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ messages, system: this.buildSystemPrompt(ctx) }),
+      body: JSON.stringify({ messages, system: this.buildSystemPrompt(ctx), model }),
     });
 
     if (!res.ok) {

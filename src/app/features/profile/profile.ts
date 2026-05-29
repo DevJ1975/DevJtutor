@@ -73,6 +73,26 @@ import { addDaysIso, todayIso } from '../../services/util';
           </button>
         </div>
 
+        <div class="mt-4 flex items-center justify-between gap-4 border-t border-slate-100 pt-4 dark:border-white/10">
+          <div>
+            <p class="font-semibold">AI tutor model 🤖</p>
+            <p class="text-sm text-slate-500">Pick a model — used when its provider key is configured.</p>
+          </div>
+          <select
+            class="input max-w-[14rem]"
+            [value]="p.settings.tutorModel ?? ''"
+            (change)="users.setTutorModel($any($event.target).value)"
+          >
+            @for (g of modelGroups; track g.label) {
+              <optgroup [label]="g.label">
+                @for (m of g.models; track m.id) {
+                  <option [value]="m.id">{{ m.name }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+        </div>
+
         <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-white/10">
           <div>
             <p class="font-semibold">Daily reminders 🔔</p>
@@ -110,6 +130,30 @@ export class Profile {
 
   protected profile = this.users.profile;
   protected goals = [50, 100, 150, 200];
+  protected modelGroups = [
+    { label: 'Default', models: [{ id: '', name: 'Auto (server default)' }] },
+    {
+      label: 'Google Gemini',
+      models: [
+        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+      ],
+    },
+    {
+      label: 'Anthropic Claude',
+      models: [
+        { id: 'claude-3-5-haiku-latest', name: 'Claude 3.5 Haiku' },
+        { id: 'claude-3-5-sonnet-latest', name: 'Claude 3.5 Sonnet' },
+      ],
+    },
+    {
+      label: 'OpenAI',
+      models: [
+        { id: 'gpt-4o-mini', name: 'GPT-4o mini' },
+        { id: 'gpt-4o', name: 'GPT-4o' },
+      ],
+    },
+  ];
   protected initial = computed(() => (this.users.firstName()[0] ?? '?').toUpperCase());
 
   protected heatmap = computed(() => {

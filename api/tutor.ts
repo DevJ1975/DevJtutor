@@ -22,7 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const { messages, system } = (req.body ?? {}) as { messages?: ChatMessage[]; system?: string };
+  const { messages, system, model: requestedModel } = (req.body ?? {}) as {
+    messages?: ChatMessage[];
+    system?: string;
+    model?: string;
+  };
   if (!Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: 'No messages provided.' });
     return;
@@ -41,13 +45,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  const model = pickModel(provider, requestedModel);
+
   try {
     const upstream =
       provider === 'anthropic'
-        ? await callAnthropic(anthropicKey!, messages, system)
+        ? await callAnthropic(anthropicKey!, messages, system, model)
         : provider === 'openai'
-          ? await callOpenAI(openaiKey!, messages, system)
-          : await callGemini(geminiKey!, messages, system);
+          ? await callOpenAI(openaiKey!, messages, system, model)
+          : await callGemini(geminiKey!, messages, system, model);
 
     if (!upstream.ok || !upstream.body) {
       const detail = await upstream.text().catch(() => '');
@@ -81,8 +87,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 }
 
-function callAnthropic(key: string, messages: ChatMessage[], system?: string): Promise<Response> {
-  const model = process.env['ANTHROPIC_MODEL'] || 'claude-3-5-haiku-latest';
+/** Use the requested model only if it belongs to the active provider; else default. */
+function pickModel(provider: Provider, requested?: string): string {
+  const defaults: Record<Provider, string> = {
+    anthropic: process.env['ANTHROPIC_MODEL'] || 'claude-3-5-haiku-latest',
+    openai: process.env['OPENAI_MODEL'] || 'gpt-4o-mini',
+    gemini: process.env['GEMINI_MODEL'] || 'gemini-2.0-flash',
+  };
+  if (requested) {
+    const matches =
+      provider === 'anthropic' ? /^claude/.test(requested) : provider === 'openai' ? /^(gpt|o\d|chatgpt)/.test(requested) : /^gemini/.test(requested);
+    if (matches) return requested;
+  }
+  return defaults[provider];
+}
+
+function callAnthropic(key: string, messages: ChatMessage[], system: string | undefined, model: string): Promise<Response> {
   return fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -90,8 +110,7 @@ function callAnthropic(key: string, messages: ChatMessage[], system?: string): P
   });
 }
 
-function callOpenAI(key: string, messages: ChatMessage[], system?: string): Promise<Response> {
-  const model = process.env['OPENAI_MODEL'] || 'gpt-4o-mini';
+function callOpenAI(key: string, messages: ChatMessage[], system: string | undefined, model: string): Promise<Response> {
   return fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
@@ -104,8 +123,7 @@ function callOpenAI(key: string, messages: ChatMessage[], system?: string): Prom
   });
 }
 
-function callGemini(key: string, messages: ChatMessage[], system?: string): Promise<Response> {
-  const model = process.env['GEMINI_MODEL'] || 'gemini-2.0-flash';
+function callGemini(key: string, messages: ChatMessage[], system: string | undefined, model: string): Promise<Response> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`;
   return fetch(url, {
     method: 'POST',

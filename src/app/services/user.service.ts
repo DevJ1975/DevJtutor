@@ -73,7 +73,7 @@ export class UserService {
         dailyXp: {},
         cardsReviewed: 0,
         fcmTokens: [],
-        settings: { theme: this.currentDomTheme(), dailyGoalXp: DEFAULT_GOAL, soundOn: true, notifications: false },
+        settings: { theme: this.currentDomTheme(), dailyGoalXp: DEFAULT_GOAL, soundOn: true, notifications: false, tutorModel: '' },
         createdAt: Date.now(),
       };
       await setDoc(ref, fresh);
@@ -115,6 +115,11 @@ export class UserService {
   async setNotifications(on: boolean): Promise<void> {
     const p = this.profile();
     if (p) await this.patch({ settings: { ...p.settings, notifications: on } });
+  }
+
+  async setTutorModel(model: string): Promise<void> {
+    const p = this.profile();
+    if (p) await this.patch({ settings: { ...p.settings, tutorModel: model } });
   }
 
   /** Register a device push token (idempotent via arrayUnion). */

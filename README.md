@@ -85,6 +85,27 @@ The LLM key is **never** shipped to the browser. Set **one** of these in
 Set **one** (checked in the order above). See `.env.example`. Until a key is set,
 the app runs fine and the chat shows a friendly “add your key” message.
 
+Learners can also pick a specific model in **Profile → AI tutor model**; the
+choice is honored only when that model’s provider key is configured (otherwise
+the server falls back to its default), so it’s always safe.
+
+### 🧪 Test the AI tutor locally
+
+**Vercel CLI** (runs the `/api/tutor` function locally):
+```bash
+npm i -g vercel
+echo "GEMINI_API_KEY=AIza..." >> .env        # or ANTHROPIC_/OPENAI_
+vercel dev                                    # serves the app + /api/tutor
+```
+
+**Firebase emulators** (runs hosting + the `tutor` function locally):
+```bash
+npm run build
+echo "GEMINI_API_KEY=AIza..." > functions/.env   # gitignored; emulator reads it
+npx firebase-tools emulators:start --only hosting,functions
+```
+Both serve `/api/tutor` so the in-app chat works end-to-end before you deploy.
+
 ---
 
 ## 🔔 Push reminders (Firebase Cloud Messaging)
