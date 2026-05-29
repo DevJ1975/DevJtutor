@@ -116,6 +116,29 @@ Firebase Analytics events fire on key actions (guarded so they never crash):
 `lesson_complete`, `flashcards_reviewed`, `code_run`, `exercise_check`,
 `earn_badge`, `tutor_message`, `notifications_enabled`.
 
+## 🔥 Deploy to Firebase Hosting
+
+The repo is configured for Firebase Hosting (`firebase.json`), with `/api/tutor`
+rewritten to the **`tutor` Cloud Function** so the AI tutor works the same as on
+Vercel — no client changes.
+
+```bash
+npm run firebase:login                 # one time
+# AI tutor key (server-side) — requires the Blaze plan for functions:
+npx firebase-tools functions:secrets:set ANTHROPIC_API_KEY   # or OPENAI_API_KEY
+npm run firebase:deploy                # builds, then deploys hosting + functions + rules
+```
+
+- **Static only** (free Spark plan): `npm run firebase:hosting` deploys the app,
+  Auth + Firestore work, but the AI tutor needs the function below.
+- **With AI tutor**: Cloud Functions require the **Blaze** plan. After setting the
+  secret, `npm run firebase:deploy` ships hosting + the `tutor` function + rules.
+- Prefer keeping the AI tutor on Vercel? Point `tutorApiUrl` in
+  `src/environments/` at your Vercel function URL and just run `firebase:hosting`.
+
+> Remember to add your Firebase Hosting domain (e.g. `devj-tutor.web.app`) to
+> **Auth → Settings → Authorized domains** so sign-in works there.
+
 ## ☁️ Deploy to Vercel
 
 This repo is Vercel-ready (`vercel.json`):

@@ -9,7 +9,8 @@
     "test": "ng test",
     "firebase:login": "npx -y firebase-tools login",
     "firebase:rules": "npx -y firebase-tools deploy --only firestore:rules",
-    "firebase:deploy": "npx -y firebase-tools deploy --only firestore"
+    "firebase:hosting": "npm run build && npx -y firebase-tools deploy --only hosting",
+    "firebase:deploy": "npm run build && npx -y firebase-tools deploy --only hosting,functions,firestore"
   },
   "private": true,
   "packageManager": "npm@10.9.7",
